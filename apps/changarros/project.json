@@ -1,0 +1,7 @@
+{
+    "name": "changarros",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "projectType": "application",
+    "sourceRoot": "apps/changarros/src",
+    "tags": []
+}
