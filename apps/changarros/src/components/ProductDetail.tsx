@@ -8,15 +8,16 @@ import {
   Ruler,
   Sparkles,
 } from "lucide-react";
-import { WHATSAPP_NUMBER } from "../constants";
 
 interface ProductDetailProps {
   product: Product;
+  whatsappPhone: string;
   onClose: () => void;
 }
 
 export const ProductDetail: React.FC<ProductDetailProps> = ({
   product,
+  whatsappPhone,
   onClose,
 }) => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -38,10 +39,49 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
     }
   };
 
+  const formatWhatsappNumber = (phone: string) => {
+    const digits = phone.replace(/\D/g, "");
+    if (!digits) return "";
+    if (digits.startsWith("52")) return digits;
+    return `52${digits}`;
+  };
+
   const handleWhatsApp = () => {
-    const message = `Hola Aura ✨ Me enamoré de este tesoro: ${product.title} ($${product.price}). ¿Aún está disponible?`;
-    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+    const phone = formatWhatsappNumber(whatsappPhone);
+    if (!phone) return;
+    const productUrl = window.location.href;
+    const message = `Hola ✨ Me enamoré de este tesoro: ${product.name} ($${product.price}). ¿Aún está disponible?\n\n${productUrl}`;
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
     window.open(url, "_blank");
+  };
+
+  const handleShare = async () => {
+    const shareUrl = window.location.href;
+    const shareTitle = product.name;
+    const shareText = product.description || "Mira este tesoro de Bazar Aura.";
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl,
+        });
+        return;
+      } catch (error) {
+      }
+    }
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        alert("Enlace copiado. Puedes pegarlo donde quieras.");
+        return;
+      }
+    } catch (error) {
+    }
+
+    alert(shareUrl);
   };
 
   const DetailItem = ({
@@ -73,19 +113,17 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
     <div className="fixed inset-0 z-[60] bg-stone-50 flex flex-col animate-in slide-in-from-bottom-10 duration-500">
       {/* Sticky Header */}
       <div
-        className={`fixed top-0 left-0 right-0 z-[70] px-4 py-3 flex justify-between items-center transition-all duration-300 ${
-          isScrolled
-            ? "bg-white/80 backdrop-blur-md border-b border-stone-100 shadow-sm"
-            : "bg-transparent"
-        }`}
+        className={`fixed top-0 left-0 right-0 z-[70] px-4 py-3 flex justify-between items-center transition-all duration-300 ${isScrolled
+          ? "bg-white/80 backdrop-blur-md border-b border-stone-100 shadow-sm"
+          : "bg-transparent"
+          }`}
       >
         <button
           onClick={onClose}
-          className={`p-3 rounded-full transition-colors ${
-            isScrolled
-              ? "hover:bg-stone-100 text-stone-800"
-              : "bg-white/40 hover:bg-white/60 text-stone-900 backdrop-blur-sm"
-          }`}
+          className={`p-3 rounded-full transition-colors ${isScrolled
+            ? "hover:bg-stone-100 text-stone-800"
+            : "bg-white/40 hover:bg-white/60 text-stone-900 backdrop-blur-sm"
+            }`}
         >
           <ArrowLeft size={24} strokeWidth={1.5} />
         </button>
@@ -94,16 +132,16 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
           className={`flex gap-2 transition-opacity duration-300 ${isScrolled ? "opacity-100" : "opacity-0"}`}
         >
           <span className="font-serif text-lg text-stone-900 truncate max-w-[150px]">
-            {product.title}
+            {product.name}
           </span>
         </div>
 
         <button
-          className={`p-3 rounded-full transition-colors ${
-            isScrolled
-              ? "hover:bg-stone-100 text-stone-800"
-              : "bg-white/40 hover:bg-white/60 text-stone-900 backdrop-blur-sm"
-          }`}
+          onClick={handleShare}
+          className={`p-3 rounded-full transition-colors ${isScrolled
+            ? "hover:bg-stone-100 text-stone-800"
+            : "bg-white/40 hover:bg-white/60 text-stone-900 backdrop-blur-sm"
+            }`}
         >
           <Share2 size={22} strokeWidth={1.5} />
         </button>
@@ -116,12 +154,18 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
         className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar pb-32 bg-stone-50"
       >
         {/* Hero Image */}
-        <div className="relative h-[65vh] w-full">
-          <img
-            src={product.images[0]}
-            alt={product.title}
-            className="w-full h-full object-cover"
-          />
+        <div className="relative h-[65vh] w-full bg-stone-200">
+          {product.images?.[0] ? (
+            <img
+              src={product.images[0]}
+              alt={product.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-stone-400">
+              <span className="font-serif text-xl italic text-center">Colección <br /> Bazar Aura</span>
+            </div>
+          )}
           <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-stone-50/20" />
         </div>
 
@@ -138,10 +182,10 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
                   {product.category}
                 </span>
                 <h1 className="font-serif text-4xl sm:text-5xl text-stone-900 leading-[1.1]">
-                  {product.title}
+                  {product.name}
                 </h1>
                 <p className="text-3xl font-light text-stone-600 mt-2">
-                  ${product.price.toLocaleString("es-MX")}
+                  {typeof product.price === 'number' ? `$${product.price.toLocaleString("es-MX")}` : 'Precio no disponible'}
                 </p>
               </div>
             </div>
@@ -170,7 +214,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
             </div>
 
             {/* Image Gallery */}
-            {product.images.length > 1 && (
+            {product.images && product.images.length > 1 && (
               <div className="space-y-4 mb-8 px-6">
                 <h3 className="font-serif text-2xl text-stone-900 px-2">
                   Galería
@@ -183,7 +227,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
                     >
                       <img
                         src={img}
-                        alt={`${product.title} detalle ${idx + 1}`}
+                        alt={`${product.name} detalle ${idx + 1}`}
                         className="w-full h-full object-cover"
                         loading="lazy"
                       />
@@ -194,16 +238,18 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
             )}
 
             {/* Tags */}
-            <div className="mx-6 pt-4 border-t border-stone-200 flex flex-wrap gap-2">
-              {product.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="text-xs text-stone-400 bg-stone-100 px-3 py-1.5 rounded-full"
-                >
-                  #{tag}
-                </span>
-              ))}
-            </div>
+            {product.tags && product.tags.length > 0 && (
+              <div className="mx-6 pt-4 border-t border-stone-200 flex flex-wrap gap-2">
+                {product.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="text-xs text-stone-400 bg-stone-100 px-3 py-1.5 rounded-full"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -216,7 +262,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
               Total
             </span>
             <span className="font-serif text-xl text-stone-900">
-              ${product.price.toLocaleString("es-MX")}
+              {typeof product.price === 'number' ? `$${product.price.toLocaleString("es-MX")}` : '-'}
             </span>
           </div>
           <button

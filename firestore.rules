@@ -1,0 +1,94 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    //
+    // Helpers
+    //
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isPlatformAdmin() {
+      return isAuthenticated() && request.auth.token.platformAdmin == true;
+    }
+
+    // Dueño del tenant
+    function isTenantOwner(tenantId) {
+      return isAuthenticated()
+        && get(/databases/$(database)/documents/tenants/$(tenantId)).data.ownerId == request.auth.uid;
+    }
+
+    // Membership del usuario autenticado para un tenant
+    function currentMembership(tenantId) {
+      return get(/databases/$(database)/documents/tenants/$(tenantId)/memberships/$(request.auth.uid));
+    }
+
+    // Es miembro del tenant (cualquier rol)
+    function isMember(tenantId) {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/tenants/$(tenantId)/memberships/$(request.auth.uid));
+    }
+
+    // Es owner o admin dentro del tenant
+    function isTenantAdminOrOwner(tenantId) {
+      return isTenantOwner(tenantId)
+        || (isAuthenticated()
+          && exists(/databases/$(database)/documents/tenants/$(tenantId)/memberships/$(request.auth.uid))
+          && currentMembership(tenantId).data.role in ["owner", "admin"]);
+    }
+
+    // Puede gestionar el equipo del tenant (se usa para leer/escribir memberships)
+    function canManageTenantTeam(tenantId) {
+      return isPlatformAdmin() || isTenantAdminOrOwner(tenantId);
+    }
+
+    //
+    // User Profiles
+    //
+
+    match /users/{uid} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.auth.uid == uid;
+    }
+
+    //
+    // Tenants
+    //
+
+    match /tenants/{tenantId} {
+      // Crear tenant: sólo super admin (platformAdmin)
+      allow create: if isPlatformAdmin();
+
+      // PUBLICO: storefront puede leer info básica del tenant
+      allow get: if true;
+
+      // PUBLICO: listado de tenants (usado para storefront y algunas consultas admin)
+      allow list: if true;
+
+      // Actualizar tenant: solo owner/admin del tenant
+      allow update: if isTenantAdminOrOwner(tenantId);
+      allow delete: if isTenantOwner(tenantId);
+
+      // Subcolecciones
+      match /memberships/{uid} {
+        allow read: if (isAuthenticated() && request.auth.uid == uid)
+                    || isTenantAdminOrOwner(tenantId)
+                    || isPlatformAdmin();
+
+        allow write: if isTenantAdminOrOwner(tenantId) || isPlatformAdmin();
+      }
+
+      match /products/{productId} {
+        allow read: if resource.data.active == true || isMember(tenantId);
+        allow write: if isMember(tenantId);
+      }
+
+      match /leads/{leadId} {
+        allow create: if true;
+        allow read, update, delete: if isMember(tenantId);
+      }
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+    "name": "admin",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "projectType": "application",
+    "sourceRoot": "apps/admin/src",
+    "tags": [],
+    "targets": {
+        "dev": {
+            "command": "npx next dev --port 3001",
+            "options": {
+                "cwd": "apps/admin"
+            }
+        },
+        "build": {
+            "command": "npx next build",
+            "options": {
+                "cwd": "apps/admin"
+            }
+        },
+        "start": {
+            "command": "npx next start --port 3001",
+            "options": {
+                "cwd": "apps/admin"
+            }
+        }
+    }
+}

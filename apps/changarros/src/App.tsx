@@ -1,55 +1,100 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { CategoryRail } from './components/CategoryRail';
 import { ProductCard } from './components/ProductCard';
 import { ProductDetail } from './components/ProductDetail';
 import { BazaarConcierge } from './components/BazaarConcierge';
-import { CATEGORIES, PRODUCTS } from './constants';
+import { useTenantData } from './lib/useTenantData';
 import { Product } from './types';
 
 export default function App() {
+  const { tenant, products, categories, loading, error } = useTenantData();
+  const navigate = useNavigate();
+  const { tenantSlug, productId } = useParams<{ tenantSlug: string; productId?: string }>();
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  const selectedProduct = useMemo(() => {
+    if (!productId) return null;
+    return products.find(p => p.id === productId) ?? null;
+  }, [productId, products]);
+
+  const handleProductClick = (product: Product) => {
+    if (!tenantSlug) return;
+    navigate(`/${tenantSlug}/producto/${product.id}`);
+  };
+
+  const handleCloseDetail = () => {
+    if (!tenantSlug) return;
+    navigate(`/${tenantSlug}`);
+  };
 
   const filteredProducts = useMemo(() => {
-    if (selectedCategory === 'all') return PRODUCTS;
-    return PRODUCTS.filter(p => p.category === selectedCategory);
-  }, [selectedCategory]);
+    if (selectedCategory === 'all') return products;
+    return products.filter(p => p.category === selectedCategory);
+  }, [selectedCategory, products]);
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-10 h-10 border-2 border-stone-300 border-t-stone-700 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-stone-400 font-serif text-lg italic">Cargando tienda...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !tenant) {
+    return (
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center px-6">
+        <div className="text-center max-w-sm">
+          <p className="font-serif text-3xl text-stone-800 mb-2">Oops.</p>
+          <p className="text-stone-500 text-sm">
+            {error ?? 'No se pudo cargar la tienda.'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-stone-50 font-sans text-stone-900 pb-20">
-      <Navbar />
-      
+      <Navbar tenantName={tenant.name} tenantLogo={tenant.logo} />
+
       <main className="pt-16 max-w-7xl mx-auto">
-        
-        {/* Hero Section (Only show on 'all' or when no specific category search intent) */}
+
+        {/* Hero Section */}
         {selectedCategory === 'all' && (
           <div className="px-6 py-8 mb-4">
             <h2 className="font-serif text-4xl sm:text-6xl text-stone-800 leading-[0.9] mb-4">
-              Curaduría <br/>
-              <span className="italic text-stone-500">consciente</span> & <br/>
+              Curaduría <br />
+              <span className="italic text-stone-500">consciente</span> & <br />
               atemporal.
             </h2>
-            <p className="text-stone-500 max-w-md text-sm sm:text-base leading-relaxed">
-              Objetos con alma para espacios tranquilos. Envíos locales y nacionales.
-            </p>
+            {tenant.address && (
+              <p className="text-stone-500 max-w-md text-sm sm:text-base leading-relaxed">
+                {tenant.address}
+              </p>
+            )}
           </div>
         )}
 
-        <CategoryRail 
-          categories={CATEGORIES} 
-          selectedCategory={selectedCategory} 
-          onSelectCategory={setSelectedCategory} 
+        <CategoryRail
+          categories={categories}
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
         />
 
         <div className="px-6 mt-6">
-          {/* Masonry Layout hack for Tailwind */}
           <div className="columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6">
             {filteredProducts.map(product => (
-              <ProductCard 
-                key={product.id} 
-                product={product} 
-                onClick={setSelectedProduct} 
+              <ProductCard
+                key={product.id}
+                product={product}
+                onClick={handleProductClick}
               />
             ))}
           </div>
@@ -59,7 +104,7 @@ export default function App() {
               <p className="text-stone-400 italic font-serif text-xl">
                 No hay tesoros en esta categoría por ahora.
               </p>
-              <button 
+              <button
                 onClick={() => setSelectedCategory('all')}
                 className="mt-4 text-sm text-stone-800 underline decoration-stone-300 underline-offset-4"
               >
@@ -72,14 +117,14 @@ export default function App() {
 
       {/* Overlays */}
       {selectedProduct && (
-        <ProductDetail 
-          product={selectedProduct} 
-          onClose={() => setSelectedProduct(null)} 
+        <ProductDetail
+          product={selectedProduct}
+          whatsappPhone={tenant.whatsappPhone}
+          onClose={handleCloseDetail}
         />
       )}
 
       <BazaarConcierge />
-      
     </div>
   );
 }

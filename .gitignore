@@ -26,3 +26,17 @@ dist-ssr
 # Nx
 .nx/cache
 .nx/workspace-data
+
+# Environment variables
+.env
+*.env
+*.env.local
+
+# Service account keys
+**/service-account.json
+
+# Generated content
+.next
+
+# Nested package-lock files
+apps/**/package-lock.json

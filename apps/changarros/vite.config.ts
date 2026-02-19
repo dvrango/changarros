@@ -12,6 +12,8 @@ export default defineConfig(({ mode }) => {
             host: '0.0.0.0',
         },
         plugins: [react()],
+        // Vite automatically exposes all VITE_* vars — no explicit define() needed.
+        // We still expose the Gemini key for the BazaarConcierge AI feature.
         define: {
             'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
             'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
