@@ -11,6 +11,12 @@
                 "cwd": "apps/admin"
             }
         },
+        "serve": {
+            "command": "npx next dev --port 3001",
+            "options": {
+                "cwd": "apps/admin"
+            }
+        },
         "build": {
             "command": "npx next build",
             "options": {

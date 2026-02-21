@@ -5,7 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "nx serve changarros",
+    "dev:changarros": "nx serve changarros",
+    "dev:admin": "nx serve admin",
     "build": "nx build changarros",
+    "build:changarros": "nx build changarros",
+    "build:admin": "nx build admin",
+    "build:all": "nx run-many -t build -p changarros,admin",
     "preview": "nx preview changarros",
     "deploy": "nx build changarros --configuration=production && vercel --prod"
   },

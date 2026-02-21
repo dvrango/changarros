@@ -1,7 +1,27 @@
 {
-    "name": "changarros",
-    "$schema": "../../node_modules/nx/schemas/project-schema.json",
-    "projectType": "application",
-    "sourceRoot": "apps/changarros/src",
-    "tags": []
+  "name": "changarros",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/changarros/src",
+  "tags": [],
+  "targets": {
+    "serve": {
+      "command": "npx vite dev",
+      "options": {
+        "cwd": "apps/changarros"
+      }
+    },
+    "build": {
+      "command": "npx vite build",
+      "options": {
+        "cwd": "apps/changarros"
+      }
+    },
+    "preview": {
+      "command": "npx vite preview",
+      "options": {
+        "cwd": "apps/changarros"
+      }
+    }
+  }
 }
