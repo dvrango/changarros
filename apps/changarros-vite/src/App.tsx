@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useState, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useRouter, useParams } from 'next/navigation';
 import { Navbar } from './components/Navbar';
 import { CategoryRail } from './components/CategoryRail';
 import { ProductCard } from './components/ProductCard';
@@ -10,28 +12,30 @@ import { Product } from './types';
 
 export default function App() {
   const { tenant, products, categories, loading, error } = useTenantData();
-  const navigate = useNavigate();
-  const { tenantSlug, productId } = useParams<{ tenantSlug: string; productId?: string }>();
+  const router = useRouter();
+  const params = useParams();
+  const tenantSlug = params?.tenantSlug as string;
+  const productId = params?.productId as string;
   const [selectedCategory, setSelectedCategory] = useState('all');
 
   const selectedProduct = useMemo(() => {
     if (!productId) return null;
-    return products.find(p => p.id === productId) ?? null;
+    return products.find((p) => p.id === productId) ?? null;
   }, [productId, products]);
 
   const handleProductClick = (product: Product) => {
     if (!tenantSlug) return;
-    navigate(`/${tenantSlug}/producto/${product.id}`);
+    router.push(`/${tenantSlug}/producto/${product.id}`);
   };
 
   const handleCloseDetail = () => {
     if (!tenantSlug) return;
-    navigate(`/${tenantSlug}`);
+    router.push(`/${tenantSlug}`);
   };
 
   const filteredProducts = useMemo(() => {
     if (selectedCategory === 'all') return products;
-    return products.filter(p => p.category === selectedCategory);
+    return products.filter((p) => p.category === selectedCategory);
   }, [selectedCategory, products]);
 
   // Loading state
@@ -40,7 +44,9 @@ export default function App() {
       <div className="min-h-screen bg-stone-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-10 h-10 border-2 border-stone-300 border-t-stone-700 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-stone-400 font-serif text-lg italic">Cargando tienda...</p>
+          <p className="text-stone-400 font-serif text-lg italic">
+            Cargando tienda...
+          </p>
         </div>
       </div>
     );
@@ -65,7 +71,6 @@ export default function App() {
       <Navbar tenantName={tenant.name} tenantLogo={tenant.logo} />
 
       <main className="pt-16 max-w-7xl mx-auto">
-
         {/* Hero Section */}
         {selectedCategory === 'all' && (
           <div className="px-6 py-8 mb-4">
@@ -90,7 +95,7 @@ export default function App() {
 
         <div className="px-6 mt-6">
           <div className="columns-2 md:columns-3 lg:columns-4 gap-6 space-y-6">
-            {filteredProducts.map(product => (
+            {filteredProducts.map((product) => (
               <ProductCard
                 key={product.id}
                 product={product}
