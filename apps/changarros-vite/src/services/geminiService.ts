@@ -1,5 +1,5 @@
-import { GoogleGenAI, Chat, GenerateContentResponse } from "@google/genai";
-import { PRODUCTS } from "../constants";
+import { GoogleGenAI, Chat, GenerateContentResponse } from '@google/genai';
+import { PRODUCTS } from '../constants';
 
 let chatSession: Chat | null = null;
 
@@ -30,15 +30,19 @@ export const getGeminiChatResponse = async (
   userMessage: string,
 ): Promise<string> => {
   try {
-    if (!process.env.API_KEY) {
-      console.warn("API_KEY not found. Returning mock response.");
-      return "Lo siento, mi conexión con el universo está un poco inestable hoy. ✨ (Falta API Key)";
+    if (!process.env.NEXT_PUBLIC_GEMINI_API_KEY) {
+      console.warn(
+        'NEXT_PUBLIC_GEMINI_API_KEY not found. Returning mock response.',
+      );
+      return 'Lo siento, mi conexión con el universo está un poco inestable hoy. ✨ (Falta API Key)';
     }
 
     if (!chatSession) {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({
+        apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY,
+      });
       chatSession = ai.chats.create({
-        model: "gemini-3-flash-preview",
+        model: 'gemini-3-flash-preview',
         config: {
           systemInstruction: SYSTEM_INSTRUCTION,
         },
@@ -48,9 +52,9 @@ export const getGeminiChatResponse = async (
     const result: GenerateContentResponse = await chatSession.sendMessage({
       message: userMessage,
     });
-    return result.text || "Disculpa, no entendí bien. ¿Podrías repetirlo?";
+    return result.text || 'Disculpa, no entendí bien. ¿Podrías repetirlo?';
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    return "Tuve un pequeño problema técnico. ¿Me lo dices de nuevo? 🌿";
+    console.error('Gemini API Error:', error);
+    return 'Tuve un pequeño problema técnico. ¿Me lo dices de nuevo? 🌿';
   }
 };

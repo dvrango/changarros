@@ -7,10 +7,6 @@ const nextConfig = {
   // nx: {
   //   svgr: false,
   // },
-  env: {
-    API_KEY: process.env.GEMINI_API_KEY,
-    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
-  },
   images: {
     remotePatterns: [
       {
