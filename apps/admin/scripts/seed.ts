@@ -7,159 +7,137 @@ import { dirname, join } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const serviceAccount = JSON.parse(readFileSync(join(__dirname, 'service-account.json'), 'utf8'));
+const serviceAccount = JSON.parse(
+  readFileSync(join(__dirname, 'service-account.json'), 'utf8'),
+);
 
-// Cargar .env.local de apps/admin para variables como PLATFORM_ADMIN_EMAIL
+// Cargar variables de entorno si es necesario, aunque aquí hardcodearemos lo esencial para "hacerlo bien"
 function loadEnvLocal() {
-    try {
-        const envPath = join(__dirname, '..', '.env.local');
-        if (!existsSync(envPath)) return;
-        const content = readFileSync(envPath, 'utf8');
-        for (const line of content.split('\n')) {
-            const l = line.trim();
-            if (!l || l.startsWith('#')) continue;
-            const idx = l.indexOf('=');
-            if (idx === -1) continue;
-            const key = l.slice(0, idx).trim();
-            let value = l.slice(idx + 1).trim();
-            if (
-                (value.startsWith('"') && value.endsWith('"')) ||
-                (value.startsWith("'") && value.endsWith("'"))
-            ) {
-                value = value.slice(1, -1);
-            }
-            if (!process.env[key]) {
-                process.env[key] = value;
-            }
-        }
-    } catch {
-        // Silencioso: si no existe o falla, seguimos con process.env existente
+  try {
+    const envPath = join(__dirname, '..', '.env.local');
+    if (!existsSync(envPath)) return;
+    const content = readFileSync(envPath, 'utf8');
+    for (const line of content.split('\n')) {
+      const l = line.trim();
+      if (!l || l.startsWith('#')) continue;
+      const idx = l.indexOf('=');
+      if (idx === -1) continue;
+      const key = l.slice(0, idx).trim();
+      let value = l.slice(idx + 1).trim();
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1);
+      }
+      if (!process.env[key]) process.env[key] = value;
     }
+  } catch {}
 }
 loadEnvLocal();
 
-// Initialize
 initializeApp({
-    credential: cert(serviceAccount)
+  credential: cert(serviceAccount),
 });
 
 const db = getFirestore();
+const auth = getAuth();
 
 async function seed() {
-    const TENANT_ID = 'demo-shop';
-    const USER_UID = 'YOUR_USER_UID_HERE'; // Replace with your UID after login
-    const PLATFORM_ADMIN_EMAIL = process.env.PLATFORM_ADMIN_EMAIL || process.env.NEXT_PUBLIC_PLATFORM_ADMIN_EMAIL;
+  console.log('🌱 Starting fresh seed...');
 
-    console.log(`Seeding tenant: ${TENANT_ID} for user: ${USER_UID}...`);
+  const PLATFORM_ADMIN_EMAIL =
+    process.env.NEXT_PUBLIC_PLATFORM_ADMIN_EMAIL || 'dvrango@pm.me';
+  console.log(`Target User Email: ${PLATFORM_ADMIN_EMAIL}`);
 
-    // 1. Create User (Simulated, usually Auth handles this)
-    console.log('Ensuring user profile...');
-    await db.collection('users').doc(USER_UID).set({
+  let userRecord;
+  try {
+    userRecord = await auth.getUserByEmail(PLATFORM_ADMIN_EMAIL);
+    console.log(`✅ User found: ${userRecord.uid}`);
+  } catch (e) {
+    console.error(
+      `❌ User ${PLATFORM_ADMIN_EMAIL} not found in Auth. Please sign up first.`,
+    );
+    process.exit(1);
+  }
+
+  const USER_UID = userRecord.uid;
+  const TENANT_ID = 'demo-shop';
+
+  // 1. Set Platform Admin Claims
+  console.log('👑 Setting platformAdmin claims...');
+  await auth.setCustomUserClaims(USER_UID, {
+    platformAdmin: true,
+    // Also useful to mark them as owner of specific tenants in claims if we wanted,
+    // but we rely on Firestore data for that usually.
+  });
+
+  // 2. Create User Profile
+  console.log('👤 Creating user profile...');
+  await db
+    .collection('users')
+    .doc(USER_UID)
+    .set(
+      {
         uid: USER_UID,
-        email: 'admin@demo.com',
-        displayName: 'Demo Admin',
-        createdAt: Date.now()
-    }, { merge: true });
+        email: PLATFORM_ADMIN_EMAIL,
+        displayName: userRecord.displayName || 'Platform Admin',
+        photoURL: userRecord.photoURL || null,
+        createdAt: Date.now(),
+        roles: ['platformAdmin'],
+      },
+      { merge: true },
+    );
 
-    // 1.1. Opcional: asignar custom claim de admin global a partir de email
-    if (PLATFORM_ADMIN_EMAIL) {
-        try {
-            console.log(`Setting platformAdmin claim for: ${PLATFORM_ADMIN_EMAIL} (if exists) ...`);
-            const auth = getAuth();
-            const userRecord = await auth.getUserByEmail(PLATFORM_ADMIN_EMAIL);
-            await auth.setCustomUserClaims(userRecord.uid, { platformAdmin: true });
-            console.log(`Custom claim platformAdmin=true set for uid: ${userRecord.uid}`);
-        } catch (e) {
-            console.warn('No se pudo asignar claim platformAdmin:', e);
-        }
-    } else {
-        console.log('PLATFORM_ADMIN_EMAIL no definido; se omite asignación de claim platformAdmin.');
-    }
+  // 3. Create Tenant
+  console.log('Mw Creating tenant "Mi Changarrito Demo"...');
+  await db.collection('tenants').doc(TENANT_ID).set({
+    name: 'Mi Changarrito Demo',
+    slug: TENANT_ID,
+    ownerId: USER_UID,
+    currency: 'MXN',
+    createdAt: Date.now(),
+    active: true,
+  });
 
-    // 2. Create Tenant
-    console.log('Creating tenant...');
-    const tenantRef = db.collection('tenants').doc(TENANT_ID);
-    await tenantRef.set({
-        name: 'Mi Changarrito Demo',
-        slug: 'demo-shop',
-        whatsappPhone: '525512345678',
-        ownerId: USER_UID,
-        primaryColor: '#e11d48', // heavy red
-        createdAt: Date.now()
+  // 4. Create Membership (CRITICAL for permissions)
+  console.log('🎟 Creating membership...');
+  await db
+    .collection('tenants')
+    .doc(TENANT_ID)
+    .collection('memberships')
+    .doc(USER_UID)
+    .set({
+      uid: USER_UID,
+      role: 'owner',
+      tenantId: TENANT_ID, // Redundant but useful for query ease
+      joinedAt: Date.now(),
     });
 
-    // 3. Create Membership
-    console.log('Creating membership...');
-    await tenantRef.collection('memberships').doc(USER_UID).set({
-        uid: USER_UID,
-        role: 'owner',
-        joinedAt: Date.now()
+  // 5. Create Sample Products
+  console.log('📦 Creating sample products...');
+  const productsRef = db
+    .collection('tenants')
+    .doc(TENANT_ID)
+    .collection('products');
+
+  const products = [
+    { name: 'Coca Cola 600ml', price: 18, stock: 50, category: 'Bebidas' },
+    { name: 'Sabritas Sal', price: 22, stock: 30, category: 'Botanas' },
+    { name: 'Gansito', price: 15, stock: 40, category: 'Pan Dulce' },
+    { name: 'Emperador Chocolate', price: 16, stock: 25, category: 'Galletas' },
+  ];
+
+  for (const p of products) {
+    await productsRef.add({
+      ...p,
+      active: true,
+      createdAt: Date.now(),
     });
+  }
 
-    // 4. Create Products
-    console.log('Creating products...');
-    const products = [
-        {
-            name: 'Coca Cola 600ml',
-            price: 18.00,
-            description: 'Refresco sabor cola, botella de plástico no retornable.',
-            active: true,
-            images: ['https://via.placeholder.com/300?text=Coca+Cola'],
-        },
-        {
-            name: 'Papas Sabritas 45g',
-            price: 22.50,
-            description: 'Papas fritas con sal.',
-            active: true,
-            images: ['https://via.placeholder.com/300?text=Sabritas'],
-        },
-        {
-            name: 'Gansito Marinela',
-            price: 15.00,
-            description: 'Pastelito con relleno cremoso y mermelada de fresa.',
-            active: true,
-            images: ['https://via.placeholder.com/300?text=Gansito'],
-        }
-    ];
-
-    for (const p of products) {
-        await tenantRef.collection('products').add({
-            ...p,
-            createdAt: Date.now(),
-            updatedAt: Date.now()
-        });
-    }
-
-    // 5. Create Dummy Leads
-    console.log('Creating dummy leads...');
-    const leads = [
-        {
-            total: 58.50,
-            status: 'new',
-            items: [
-                { productId: '1', name: 'Coca Cola 600ml', quantity: 2, price: 18.00 },
-                { productId: '2', name: 'Papas Sabritas 45g', quantity: 1, price: 22.50 }
-            ],
-            createdAt: Date.now() - 1000 * 60 * 60 * 2, // 2 hours ago
-            updatedAt: Date.now()
-        },
-        {
-            total: 15.00,
-            status: 'closed',
-            items: [
-                { productId: '3', name: 'Gansito Marinela', quantity: 1, price: 15.00 }
-            ],
-            notes: 'Entregado en la esquina.',
-            createdAt: Date.now() - 1000 * 60 * 60 * 24, // 1 day ago
-            updatedAt: Date.now()
-        }
-    ];
-
-    for (const l of leads) {
-        await tenantRef.collection('leads').add(l);
-    }
-
-    console.log('Done! ✅');
+  console.log('✅ Seed completed successfully!');
+  console.log('👉 Now run: npx firebase deploy --only firestore:rules');
 }
 
 seed().catch(console.error);

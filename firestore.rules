@@ -1,10 +1,9 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    //
-    // Helpers
-    //
+    // --- HELPER FUNCTIONS ---
 
     function isAuthenticated() {
       return request.auth != null;
@@ -14,81 +13,74 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.token.platformAdmin == true;
     }
 
-    // Dueño del tenant
+    // Check if user is a member of the tenant (any role)
+    // Requires document at: tenants/{tenantId}/memberships/{userId}
+    function isTenantMember(tenantId) {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/tenants/$(tenantId)/memberships/$(request.auth.uid));
+    }
+
+    // Check if user is the owner of the tenant
     function isTenantOwner(tenantId) {
-      return isAuthenticated()
-        && get(/databases/$(database)/documents/tenants/$(tenantId)).data.ownerId == request.auth.uid;
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/tenants/$(tenantId)).data.ownerId == request.auth.uid;
     }
 
-    // Membership del usuario autenticado para un tenant
-    function currentMembership(tenantId) {
-      return get(/databases/$(database)/documents/tenants/$(tenantId)/memberships/$(request.auth.uid));
-    }
+    // --- RULES ---
 
-    // Es miembro del tenant (cualquier rol)
-    function isMember(tenantId) {
-      return isAuthenticated()
-        && exists(/databases/$(database)/documents/tenants/$(tenantId)/memberships/$(request.auth.uid));
-    }
-
-    // Es owner o admin dentro del tenant
-    function isTenantAdminOrOwner(tenantId) {
-      return isTenantOwner(tenantId)
-        || (isAuthenticated()
-          && exists(/databases/$(database)/documents/tenants/$(tenantId)/memberships/$(request.auth.uid))
-          && currentMembership(tenantId).data.role in ["owner", "admin"]);
-    }
-
-    // Puede gestionar el equipo del tenant (se usa para leer/escribir memberships)
-    function canManageTenantTeam(tenantId) {
-      return isPlatformAdmin() || isTenantAdminOrOwner(tenantId);
-    }
-
-    //
-    // User Profiles
-    //
-
-    match /users/{uid} {
+    // 1. Users (Global Profiles)
+    match /users/{userId} {
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && request.auth.uid == uid;
+      allow write: if isAuthenticated() && request.auth.uid == userId;
     }
 
-    //
-    // Tenants
-    //
-
+    // 2. Tenants
     match /tenants/{tenantId} {
-      // Crear tenant: sólo super admin (platformAdmin)
+      // Public read for storefronts (fetching store info)
+      allow read: if true;
+      
+      // Create: Only Platform Admin
       allow create: if isPlatformAdmin();
+      
+      // Update/Delete: Tenant Owner or Platform Admin
+      allow update, delete: if isTenantOwner(tenantId) || isPlatformAdmin();
 
-      // PUBLICO: storefront puede leer info básica del tenant
-      allow get: if true;
-
-      // PUBLICO: listado de tenants (usado para storefront y algunas consultas admin)
-      allow list: if true;
-
-      // Actualizar tenant: solo owner/admin del tenant
-      allow update: if isTenantAdminOrOwner(tenantId);
-      allow delete: if isTenantOwner(tenantId);
-
-      // Subcolecciones
-      match /memberships/{uid} {
-        allow read: if (isAuthenticated() && request.auth.uid == uid)
-                    || isTenantAdminOrOwner(tenantId)
-                    || isPlatformAdmin();
-
-        allow write: if isTenantAdminOrOwner(tenantId) || isPlatformAdmin();
+      // 2.1 Memberships
+      // Schema: tenants/{tenantId}/memberships/{userId}
+      match /memberships/{membershipId} {
+        allow read: if isAuthenticated() && (
+          request.auth.uid == membershipId || // Read own membership
+          isTenantMember(tenantId) ||         // Read co-workers
+          isPlatformAdmin()
+        );
+        // Only Owner or Platform Admin can manage members
+        allow write: if isTenantOwner(tenantId) || isPlatformAdmin();
       }
 
+      // 2.2 Products
       match /products/{productId} {
-        allow read: if resource.data.active == true || isMember(tenantId);
-        allow write: if isMember(tenantId);
+        // Public read for storefront
+        allow read: if true;
+        // Write: Any member of the tenant
+        allow write: if isTenantMember(tenantId) || isPlatformAdmin();
       }
-
+      
+      // 2.3 Leads
       match /leads/{leadId} {
+        // Create: Public (contact forms)
         allow create: if true;
-        allow read, update, delete: if isMember(tenantId);
+        // Read/Manage: Tenant members
+        allow read, update, delete: if isTenantMember(tenantId) || isPlatformAdmin();
       }
+    }
+
+    // 3. Collection Group Queries
+    // Global rule for "memberships" collection group
+    match /{path=**}/memberships/{membershipId} {
+      allow read: if isAuthenticated() && (
+        resource.data.uid == request.auth.uid ||
+        isPlatformAdmin()
+      );
     }
   }
 }

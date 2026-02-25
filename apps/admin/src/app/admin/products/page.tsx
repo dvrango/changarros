@@ -135,7 +135,7 @@ export default function ProductsPage() {
                                 <div className="px-4 py-4 sm:px-6 flex items-center justify-between hover:bg-gray-50">
                                     <div className="flex items-center min-w-0 flex-1">
                                         <div className="flex-shrink-0 h-16 w-16 relative rounded-md overflow-hidden bg-gray-100 border border-gray-200">
-                                            {product.images[0] ? (
+                                            {product.images && product.images[0] ? (
                                                 <Image src={product.images[0]} alt={product.name} fill className="object-cover" />
                                             ) : (
                                                 <div className="flex items-center justify-center h-full w-full text-gray-400">

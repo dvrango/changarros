@@ -1,19 +1,44 @@
 {
-    "indexes": [
+  "indexes": [
+    {
+      "collectionGroup": "memberships",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
         {
-            "collectionGroup": "products",
-            "queryScope": "COLLECTION",
-            "fields": [
-                {
-                    "fieldPath": "active",
-                    "order": "ASCENDING"
-                },
-                {
-                    "fieldPath": "createdAt",
-                    "order": "DESCENDING"
-                }
-            ]
+          "fieldPath": "uid",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "role",
+          "order": "ASCENDING"
         }
-    ],
-    "fieldOverrides": []
+      ]
+    },
+    {
+      "collectionGroup": "products",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "active",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": [
+    {
+      "collectionGroup": "memberships",
+      "fieldPath": "uid",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION_GROUP"
+        }
+      ]
+    }
+  ]
 }
