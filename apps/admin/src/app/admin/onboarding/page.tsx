@@ -4,17 +4,11 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { useTenant } from "@/lib/tenant";
 import { db } from "@/lib/firebase";
-import {
-  doc,
-  setDoc,
-  collection,
-  addDoc,
-  serverTimestamp,
-} from "firebase/firestore";
+import { doc, setDoc, collection, addDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
 export default function OnboardingPage() {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const { isPlatformAdmin } = useTenant();
   const router = useRouter();
 
@@ -23,41 +17,28 @@ export default function OnboardingPage() {
   const [phone, setPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Auth guard
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/login");
-    }
-  }, [user, loading, router]);
-
   // Gate: sólo super admin puede crear negocios
   useEffect(() => {
-    if (!loading && user && !isPlatformAdmin) {
+    if (user && !isPlatformAdmin) {
       router.push("/admin/products");
     }
-  }, [loading, user, isPlatformAdmin, router]);
+  }, [user, isPlatformAdmin, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
-    if (!isPlatformAdmin) return;
+    if (!user || !isPlatformAdmin) return;
     setSubmitting(true);
 
     try {
-      // 1. Create Tenant Document
-      // We use addDoc to auto-generate ID, or we could use slug as ID if guaranteed unique.
-      // Auto-ID is safer for changing slugs later.
       const tenantRef = await addDoc(collection(db, "tenants"), {
         name: businessName,
         slug: slug.toLowerCase().replace(/\s+/g, "-"),
         whatsappPhone: phone,
         ownerId: user.uid,
         createdAt: Date.now(),
-        // Default styling
         primaryColor: "#000000",
       });
 
-      // 2. Create Membership for Owner
       await setDoc(doc(db, `tenants/${tenantRef.id}/memberships/${user.uid}`), {
         uid: user.uid,
         tenantId: tenantRef.id,
@@ -65,7 +46,6 @@ export default function OnboardingPage() {
         joinedAt: Date.now(),
       });
 
-      // Redirect to admin dashboard
       router.push("/admin");
     } catch (error) {
       console.error("Error creating tenant:", error);
@@ -75,23 +55,15 @@ export default function OnboardingPage() {
     }
   };
 
-  if (loading || !user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Cargando...
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="flex flex-col items-center justify-center py-12 px-4">
       <div className="w-full max-w-md space-y-8 bg-white p-8 rounded-lg shadow">
         <div>
           <h2 className="text-center text-3xl font-bold tracking-tight text-gray-900">
-            ¡Bienvenido!
+            Nuevo Negocio
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Vamos a configurar tu primer negocio (changarro).
+            Configura un nuevo changarro en la plataforma.
           </p>
         </div>
 
@@ -112,7 +84,6 @@ export default function OnboardingPage() {
                 value={businessName}
                 onChange={(e) => {
                   setBusinessName(e.target.value);
-                  // Auto-slug suggestion
                   if (!slug) {
                     setSlug(e.target.value.toLowerCase().replace(/\s+/g, "-"));
                   }
@@ -152,7 +123,7 @@ export default function OnboardingPage() {
                 WhatsApp (con código de país)
               </label>
               <p className="text-xs text-gray-500 mb-1">
-                Ej: 5215512345678 (Importante para el link de WhatsApp)
+                Ej: 5215512345678
               </p>
               <input
                 id="phone"

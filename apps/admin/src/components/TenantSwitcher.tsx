@@ -38,7 +38,7 @@ export default function TenantSwitcher() {
     }
     return (
       <button
-        onClick={() => router.push("/onboarding")}
+        onClick={() => router.push("/admin/onboarding")}
         className="flex items-center w-full px-4 py-3 text-sm font-medium text-blue-600 bg-white border border-dashed border-blue-300 rounded-md hover:bg-blue-50"
       >
         <Plus className="w-4 h-4 mr-2" />
@@ -90,7 +90,7 @@ export default function TenantSwitcher() {
                 <div className="border-t border-gray-100 my-1"></div>
                 <button
                   onClick={() => {
-                    router.push("/onboarding");
+                    router.push("/admin/onboarding");
                     setIsOpen(false);
                   }}
                   className="flex items-center w-full px-4 py-2 text-sm text-blue-600 hover:bg-blue-50"
