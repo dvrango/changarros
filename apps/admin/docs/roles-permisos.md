@@ -1,4 +1,4 @@
-# Roles y permisos en Changarros-Admin
+# Roles y permisos en ChangarrosAdmin
 
 Este documento describe cómo funciona el modelo de **roles y permisos** en la app de administración (`apps/admin`), tanto a nivel de datos en Firestore como en la UI.
 
