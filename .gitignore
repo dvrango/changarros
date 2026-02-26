@@ -34,6 +34,7 @@ dist-ssr
 
 # Service account keys
 **/service-account.json
+**/*/service-account-staging.json
 
 # Generated content
 .next

@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from 'react';
 import {
   collection,
   query,
@@ -9,10 +9,10 @@ import {
   doc,
   getDoc,
   collectionGroup,
-} from "firebase/firestore";
-import { db } from "./firebase";
-import { useAuth } from "./auth";
-import { Tenant, Membership } from "@/types";
+} from 'firebase/firestore';
+import { db } from './firebase';
+import { useAuth } from './auth';
+import { Tenant, Membership } from '@/types';
 
 interface TenantContextType {
   currentTenant: Tenant | null;
@@ -49,8 +49,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
   );
 
   const isPlatformAdmin =
-    !!user?.email &&
-    user.email === process.env.NEXT_PUBLIC_PLATFORM_ADMIN_EMAIL;
+    !!user?.email && user.email === process.env.NEXT_PLATFORM_ADMIN_EMAIL;
 
   const fetchTenants = async () => {
     if (!user) {
@@ -69,28 +68,28 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
       const membershipByTenant = new Map<string, Membership>();
 
       try {
-        const membershipsRef = collectionGroup(db, "memberships");
+        const membershipsRef = collectionGroup(db, 'memberships');
         const membershipsQuery = query(
           membershipsRef,
-          where("uid", "==", user.uid),
+          where('uid', '==', user.uid),
         );
         const membershipsSnap = await getDocs(membershipsQuery);
 
         for (const membershipDoc of membershipsSnap.docs) {
           const data = membershipDoc.data() as Membership;
-          const tenantIdFromPath = membershipDoc.ref.parent.parent?.id || "";
+          const tenantIdFromPath = membershipDoc.ref.parent.parent?.id || '';
           const tenantId = data.tenantId || tenantIdFromPath;
           if (!tenantId) {
             continue;
           }
 
-          const tenantRef = doc(db, "tenants", tenantId);
+          const tenantRef = doc(db, 'tenants', tenantId);
           const tenantSnap = await getDoc(tenantRef);
           if (!tenantSnap.exists()) {
             continue;
           }
 
-          const tenantData = tenantSnap.data() as Omit<Tenant, "id">;
+          const tenantData = tenantSnap.data() as Omit<Tenant, 'id'>;
           const tenant: Tenant = { id: tenantSnap.id, ...tenantData };
           distinctTenants.set(tenant.id, tenant);
 
@@ -100,13 +99,13 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
           });
         }
       } catch (error) {
-        console.error("Error fetching memberships:", error);
+        console.error('Error fetching memberships:', error);
       }
 
       if (isPlatformAdmin) {
-        const allTenantsSnap = await getDocs(collection(db, "tenants"));
+        const allTenantsSnap = await getDocs(collection(db, 'tenants'));
         for (const tenantDoc of allTenantsSnap.docs) {
-          const tenantData = tenantDoc.data() as Omit<Tenant, "id">;
+          const tenantData = tenantDoc.data() as Omit<Tenant, 'id'>;
           const tenant: Tenant = { id: tenantDoc.id, ...tenantData };
           distinctTenants.set(tenant.id, tenant);
 
@@ -114,7 +113,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
             const syntheticMembership: Membership = {
               uid: user.uid,
               tenantId: tenant.id,
-              role: "owner",
+              role: 'owner',
               joinedAt: Date.now(),
             };
             membershipByTenant.set(tenant.id, syntheticMembership);
@@ -122,13 +121,13 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
         }
       } else if (distinctTenants.size === 0) {
         const ownerQuery = query(
-          collection(db, "tenants"),
-          where("ownerId", "==", user.uid),
+          collection(db, 'tenants'),
+          where('ownerId', '==', user.uid),
         );
         const ownerSnap = await getDocs(ownerQuery);
 
         for (const tenantDoc of ownerSnap.docs) {
-          const tenantData = tenantDoc.data() as Omit<Tenant, "id">;
+          const tenantData = tenantDoc.data() as Omit<Tenant, 'id'>;
           const tenant: Tenant = { id: tenantDoc.id, ...tenantData };
           distinctTenants.set(tenant.id, tenant);
 
@@ -136,7 +135,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
             const syntheticMembership: Membership = {
               uid: user.uid,
               tenantId: tenant.id,
-              role: "owner",
+              role: 'owner',
               joinedAt: Date.now(),
             };
             membershipByTenant.set(tenant.id, syntheticMembership);
@@ -153,8 +152,8 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
       setMemberships(membershipsList);
 
       const storedTenantId =
-        typeof window !== "undefined"
-          ? localStorage.getItem("lastTenantId")
+        typeof window !== 'undefined'
+          ? localStorage.getItem('lastTenantId')
           : null;
       let selectedTenant: Tenant | null = null;
 
@@ -173,7 +172,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
         setCurrentMembership(null);
       }
     } catch (error) {
-      console.error("Error fetching tenants:", error);
+      console.error('Error fetching tenants:', error);
       setTenants([]);
       setMemberships([]);
       setCurrentTenant(null);
@@ -194,8 +193,8 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
       const membership =
         memberships.find((m) => m.tenantId === tenant.id) ?? null;
       setCurrentMembership(membership);
-      if (typeof window !== "undefined") {
-        localStorage.setItem("lastTenantId", tenantId);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('lastTenantId', tenantId);
       }
     }
   };

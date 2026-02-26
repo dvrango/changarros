@@ -1,13 +1,6 @@
-import React, { useEffect, useState, useRef } from "react";
-import { Product } from "../types";
-import {
-  ArrowLeft,
-  MessageCircle,
-  Share2,
-  Info,
-  Ruler,
-  Sparkles,
-} from "lucide-react";
+import React, { useEffect, useState, useRef } from 'react';
+import { Product } from '../types';
+import { ArrowLeft, MessageCircle, Share2 } from 'lucide-react';
 
 interface ProductDetailProps {
   product: Product;
@@ -25,9 +18,9 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
 
   // Disable body scroll when modal is open
   useEffect(() => {
-    document.body.style.overflow = "hidden";
+    document.body.style.overflow = 'hidden';
     return () => {
-      document.body.style.overflow = "unset";
+      document.body.style.overflow = 'unset';
     };
   }, []);
 
@@ -40,9 +33,9 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
   };
 
   const formatWhatsappNumber = (phone: string) => {
-    const digits = phone.replace(/\D/g, "");
-    if (!digits) return "";
-    if (digits.startsWith("52")) return digits;
+    const digits = phone.replace(/\D/g, '');
+    if (!digits) return '';
+    if (digits.startsWith('52')) return digits;
     return `52${digits}`;
   };
 
@@ -52,13 +45,13 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
     const productUrl = window.location.href;
     const message = `Hola ✨ Me enamoré de este tesoro: ${product.name} ($${product.price}). ¿Aún está disponible?\n\n${productUrl}`;
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-    window.open(url, "_blank");
+    window.open(url, '_blank');
   };
 
   const handleShare = async () => {
     const shareUrl = window.location.href;
     const shareTitle = product.name;
-    const shareText = product.description || "Mira este tesoro de Bazar Aura.";
+    const shareText = product.description || 'Mira este tesoro de Bazar Aura.';
 
     if (navigator.share) {
       try {
@@ -69,67 +62,46 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
         });
         return;
       } catch (error) {
+        //do nothing
       }
     }
 
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(shareUrl);
-        alert("Enlace copiado. Puedes pegarlo donde quieras.");
+        alert('Enlace copiado. Puedes pegarlo donde quieras.');
         return;
       }
     } catch (error) {
+      //do nothing
     }
 
     alert(shareUrl);
-  };
-
-  const DetailItem = ({
-    icon: Icon,
-    label,
-    value,
-  }: {
-    icon: any;
-    label: string;
-    value?: string;
-  }) => {
-    if (!value) return null;
-    return (
-      <div className="flex items-start gap-4 py-4 border-b border-stone-100 last:border-0">
-        <div className="p-2 bg-stone-100 rounded-full text-stone-600">
-          <Icon size={18} strokeWidth={1.5} />
-        </div>
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-1">
-            {label}
-          </p>
-          <p className="text-stone-800 font-light">{value}</p>
-        </div>
-      </div>
-    );
   };
 
   return (
     <div className="fixed inset-0 z-[60] bg-stone-50 flex flex-col animate-in slide-in-from-bottom-10 duration-500">
       {/* Sticky Header */}
       <div
-        className={`fixed top-0 left-0 right-0 z-[70] px-4 py-3 flex justify-between items-center transition-all duration-300 ${isScrolled
-          ? "bg-white/80 backdrop-blur-md border-b border-stone-100 shadow-sm"
-          : "bg-transparent"
-          }`}
+        className={`fixed top-0 left-0 right-0 z-[70] px-4 py-3 flex justify-between items-center transition-all duration-300 ${
+          isScrolled
+            ? 'bg-white/80 backdrop-blur-md border-b border-stone-100 shadow-sm'
+            : 'bg-transparent'
+        }`}
       >
         <button
           onClick={onClose}
-          className={`p-3 rounded-full transition-colors ${isScrolled
-            ? "hover:bg-stone-100 text-stone-800"
-            : "bg-white/40 hover:bg-white/60 text-stone-900 backdrop-blur-sm"
-            }`}
+          className={`p-3 rounded-full transition-colors ${
+            isScrolled
+              ? 'hover:bg-stone-100 text-stone-800'
+              : 'bg-white/40 hover:bg-white/60 text-stone-900 backdrop-blur-sm'
+          }`}
         >
           <ArrowLeft size={24} strokeWidth={1.5} />
         </button>
 
         <div
-          className={`flex gap-2 transition-opacity duration-300 ${isScrolled ? "opacity-100" : "opacity-0"}`}
+          className={`flex gap-2 transition-opacity duration-300 ${isScrolled ? 'opacity-100' : 'opacity-0'}`}
         >
           <span className="font-serif text-lg text-stone-900 truncate max-w-[150px]">
             {product.name}
@@ -138,10 +110,11 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
 
         <button
           onClick={handleShare}
-          className={`p-3 rounded-full transition-colors ${isScrolled
-            ? "hover:bg-stone-100 text-stone-800"
-            : "bg-white/40 hover:bg-white/60 text-stone-900 backdrop-blur-sm"
-            }`}
+          className={`p-3 rounded-full transition-colors ${
+            isScrolled
+              ? 'hover:bg-stone-100 text-stone-800'
+              : 'bg-white/40 hover:bg-white/60 text-stone-900 backdrop-blur-sm'
+          }`}
         >
           <Share2 size={22} strokeWidth={1.5} />
         </button>
@@ -163,7 +136,9 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-stone-400">
-              <span className="font-serif text-xl italic text-center">Colección <br /> Bazar Aura</span>
+              <span className="font-serif text-xl italic text-center">
+                Colección <br /> Bazar Aura
+              </span>
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-stone-50/20" />
@@ -185,7 +160,9 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
                   {product.name}
                 </h1>
                 <p className="text-3xl font-light text-stone-600 mt-2">
-                  {typeof product.price === 'number' ? `$${product.price.toLocaleString("es-MX")}` : 'Precio no disponible'}
+                  {typeof product.price === 'number'
+                    ? `$${product.price.toLocaleString('es-MX')}`
+                    : 'Precio no disponible'}
                 </p>
               </div>
             </div>
@@ -193,24 +170,6 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
             {/* Description */}
             <div className="prose prose-stone prose-lg text-stone-600 font-light leading-relaxed mb-10 px-6">
               <p>{product.description}</p>
-            </div>
-
-            {/* Technical Details Section */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-stone-100 mb-10 mx-6">
-              <h3 className="font-serif text-xl text-stone-900 mb-4">
-                Detalles del objeto
-              </h3>
-              <DetailItem
-                icon={Ruler}
-                label="Dimensiones"
-                value={product.dimensions}
-              />
-              <DetailItem
-                icon={Sparkles}
-                label="Material"
-                value={product.material}
-              />
-              <DetailItem icon={Info} label="Cuidados" value={product.care} />
             </div>
 
             {/* Image Gallery */}
@@ -262,7 +221,9 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
               Total
             </span>
             <span className="font-serif text-xl text-stone-900">
-              {typeof product.price === 'number' ? `$${product.price.toLocaleString("es-MX")}` : '-'}
+              {typeof product.price === 'number'
+                ? `$${product.price.toLocaleString('es-MX')}`
+                : '-'}
             </span>
           </div>
           <button

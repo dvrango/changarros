@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "changarros-2474c"
+    "default": "changarros-2474c",
+    "staging": "changarros-2474c",
+    "production": "changarros-prod"
   }
 }

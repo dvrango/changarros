@@ -2,14 +2,15 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     match /tenants/{tenantId}/{allPaths=**} {
-      // Allow read/write if member of tenant
-      // Note: isMember check in Storage rules is harder because we can't access Firestore easily.
-      // For MVP: allow read/write if authenticated. Or verify token claims (not implemented).
-      // Let's stick to auth specific check.
-      allow read, write: if request.auth != null;
+      // Public read — the storefront shows product images without auth
+      allow read: if true;
+
+      // Write only for platform admins or authenticated members of this specific tenant
+      allow write: if request.auth != null && (
+        request.auth.token.platformAdmin == true ||
+        firestore.exists(/databases/(default)/documents/tenants/$(tenantId)/memberships/$(request.auth.uid))
+      );
     }
-    match /{allPaths=**} {
-      allow read, write: if request.auth != null;
-    }
+    // Everything outside /tenants/ is denied by default
   }
 }

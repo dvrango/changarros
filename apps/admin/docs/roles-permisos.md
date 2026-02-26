@@ -70,9 +70,9 @@ Los permisos por negocio se modelan con la colección anidada `memberships` bajo
 Existe un concepto de **admin global**, que ve todos los negocios de la plataforma, independientemente de las memberships.
 
 - En la UI (frontend):
-  - Variable de entorno: `NEXT_PUBLIC_PLATFORM_ADMIN_EMAIL`
+  - Variable de entorno: `NEXT_PLATFORM_ADMIN_EMAIL`
   - Lógica: Archivo `src/lib/tenant.tsx`
-    - Si `email === NEXT_PUBLIC_PLATFORM_ADMIN_EMAIL`, `isPlatformAdmin = true` en el contexto para efectos de navegación y UX.
+    - Si `email === NEXT_PLATFORM_ADMIN_EMAIL`, `isPlatformAdmin = true` en el contexto para efectos de navegación y UX.
     - En ese caso, el contexto carga **todos** los `tenants` y genera una `Membership` sintética con rol `'owner'` si no existe una real.
 - En reglas de seguridad (Firestore Rules):
   - El “admin global” se reconoce mediante un **Custom Claim** en el token de Auth: `platformAdmin: true`.
@@ -81,7 +81,7 @@ Existe un concepto de **admin global**, que ve todos los negocios de la platafor
 
 Resumen:
 
-- Frontend: trata como admin global al correo definido en `NEXT_PUBLIC_PLATFORM_ADMIN_EMAIL`.
+- Frontend: trata como admin global al correo definido en `NEXT_PLATFORM_ADMIN_EMAIL`.
 - Reglas de seguridad: requieren `request.auth.token.platformAdmin === true`.
 - Con ambos, ve todos los tenants y puede gestionar el equipo de cualquier negocio.
 
@@ -239,7 +239,7 @@ Resumen:
 
 ### 1. Admin global (tú) gestionando cualquier negocio
 
-1. Tu correo coincide con `NEXT_PUBLIC_PLATFORM_ADMIN_EMAIL`.
+1. Tu correo coincide con `NEXT_PLATFORM_ADMIN_EMAIL`.
 2. En el dashboard puedes seleccionar cualquier negocio desde el `TenantSwitcher`.
 3. En `/admin/settings` de cada negocio:
    - Sección **Equipo** disponible siempre (porque `isPlatformAdmin` es `true`).
@@ -272,6 +272,6 @@ Resumen:
 - El modelo de permisos es **por negocio**, no global por usuario:
   - Un mismo usuario puede ser `owner` de un tenant, `staff` de otro, y no tener acceso a otros.
 - Admin global:
-  - UX/frontend: por correo (`NEXT_PUBLIC_PLATFORM_ADMIN_EMAIL`).
+  - UX/frontend: por correo (`NEXT_PLATFORM_ADMIN_EMAIL`).
   - Seguridad: por Custom Claim (`platformAdmin: true`) en el token.
 - Las memberships se consultan con `collectionGroup`, por lo que es necesario tener el índice correspondiente creado en Firestore.

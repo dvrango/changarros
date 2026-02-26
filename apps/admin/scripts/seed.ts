@@ -47,7 +47,7 @@ async function seed() {
   console.log('🌱 Starting fresh seed...');
 
   const PLATFORM_ADMIN_EMAIL =
-    process.env.NEXT_PUBLIC_PLATFORM_ADMIN_EMAIL || 'dvrango@pm.me';
+    process.env.NEXT_PLATFORM_ADMIN_EMAIL || 'dvrango@pm.me';
   console.log(`Target User Email: ${PLATFORM_ADMIN_EMAIL}`);
 
   let userRecord;

@@ -16,7 +16,7 @@ if (!existsSync(serviceAccountPath)) {
 const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, 'utf8'));
 
 // Load .env.local to get email
-let platformAdminEmail = process.env.NEXT_PUBLIC_PLATFORM_ADMIN_EMAIL;
+let platformAdminEmail = process.env.NEXT_PLATFORM_ADMIN_EMAIL;
 
 if (!platformAdminEmail) {
   try {
@@ -25,7 +25,7 @@ if (!platformAdminEmail) {
       const content = readFileSync(envPath, 'utf8');
       for (const line of content.split('\n')) {
         const l = line.trim();
-        if (l.startsWith('NEXT_PUBLIC_PLATFORM_ADMIN_EMAIL=')) {
+        if (l.startsWith('NEXT_PLATFORM_ADMIN_EMAIL=')) {
           platformAdminEmail = l.split('=')[1].trim();
           if (
             (platformAdminEmail.startsWith('"') &&
@@ -46,7 +46,7 @@ if (!platformAdminEmail) {
 
 if (!platformAdminEmail) {
   console.error(
-    'Error: NEXT_PUBLIC_PLATFORM_ADMIN_EMAIL not found in environment or .env.local',
+    'Error: NEXT_PLATFORM_ADMIN_EMAIL not found in environment or .env.local',
   );
   process.exit(1);
 }
