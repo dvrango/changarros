@@ -47,9 +47,17 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
   const [currentMembership, setCurrentMembership] = useState<Membership | null>(
     null,
   );
+  const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
 
-  const isPlatformAdmin =
-    !!user?.email && user.email === process.env.NEXT_PLATFORM_ADMIN_EMAIL;
+  useEffect(() => {
+    if (user) {
+      user.getIdTokenResult().then((result) => {
+        setIsPlatformAdmin(result.claims['platformAdmin'] === true);
+      });
+    } else {
+      setIsPlatformAdmin(false);
+    }
+  }, [user]);
 
   const fetchTenants = async () => {
     if (!user) {
