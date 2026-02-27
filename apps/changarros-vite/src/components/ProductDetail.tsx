@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Product } from '../types';
-import { ArrowLeft, MessageCircle, Share2 } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Share2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface ProductDetailProps {
   product: Product;
@@ -13,227 +13,302 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
   whatsappPhone,
   onClose,
 }) => {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [activeImage, setActiveImage] = useState(0);
+  const [visible, setVisible] = useState(false);
+  const [shared, setShared] = useState(false);
+  const touchStartX = useRef<number | null>(null);
 
-  // Disable body scroll when modal is open
+  const images = product.images?.length ? product.images : [];
+  const hasMultiple = images.length > 1;
+
   useEffect(() => {
+    const t = setTimeout(() => setVisible(true), 10);
     document.body.style.overflow = 'hidden';
     return () => {
-      document.body.style.overflow = 'unset';
+      clearTimeout(t);
+      document.body.style.overflow = '';
     };
   }, []);
 
-  // Handle scroll effect for the header
-  const handleScroll = () => {
-    if (scrollContainerRef.current) {
-      const scrollTop = scrollContainerRef.current.scrollTop;
-      setIsScrolled(scrollTop > 50);
-    }
-  };
-
-  const formatWhatsappNumber = (phone: string) => {
-    const digits = phone.replace(/\D/g, '');
-    if (!digits) return '';
-    if (digits.startsWith('52')) return digits;
-    return `52${digits}`;
+  const handleClose = () => {
+    setVisible(false);
+    setTimeout(onClose, 280);
   };
 
   const handleWhatsApp = () => {
-    const phone = formatWhatsappNumber(whatsappPhone);
-    if (!phone) return;
-    const productUrl = window.location.href;
-    const message = `Hola ✨ Me enamoré de este tesoro: ${product.name} ($${product.price}). ¿Aún está disponible?\n\n${productUrl}`;
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
+    const msg = encodeURIComponent(
+      `Hola! Me interesa "${product.name}" que vi en tu tienda. ¿Está disponible? 🙌`
+    );
+    window.open(`https://wa.me/${whatsappPhone}?text=${msg}`, '_blank');
   };
 
-  const handleShare = async () => {
-    const shareUrl = window.location.href;
-    const shareTitle = product.name;
-    const shareText = product.description || 'Mira este tesoro de Bazar Aura.';
-
+  const handleShare = () => {
     if (navigator.share) {
-      try {
-        await navigator.share({
-          title: shareTitle,
-          text: shareText,
-          url: shareUrl,
+      // Must be called synchronously inside the user gesture for Safari iOS
+      navigator
+        .share({
+          title: product.name,
+          text: product.description,
+          url: window.location.href,
+        })
+        .catch(() => {
+          /* dismissed */
         });
-        return;
-      } catch (error) {
-        //do nothing
+    } else {
+      const url = window.location.href;
+      if (navigator.clipboard) {
+        navigator.clipboard
+          .writeText(url)
+          .then(() => {
+            setShared(true);
+            setTimeout(() => setShared(false), 2000);
+          })
+          .catch(() => {
+            /* clipboard denied */
+          });
+      } else {
+        // Fallback for HTTP or older browsers
+        const el = document.createElement('textarea');
+        el.value = url;
+        el.style.position = 'fixed';
+        el.style.opacity = '0';
+        document.body.appendChild(el);
+        el.focus();
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        setShared(true);
+        setTimeout(() => setShared(false), 2000);
       }
     }
+  };
 
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(shareUrl);
-        alert('Enlace copiado. Puedes pegarlo donde quieras.');
-        return;
-      }
-    } catch (error) {
-      //do nothing
+  const prevImage = () =>
+    setActiveImage((i) => (i - 1 + images.length) % images.length);
+  const nextImage = () =>
+    setActiveImage((i) => (i + 1) % images.length);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const delta = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(delta) > 48) {
+      if (delta < 0) nextImage();
+      else prevImage();
     }
-
-    alert(shareUrl);
+    touchStartX.current = null;
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-stone-50 flex flex-col animate-in slide-in-from-bottom-10 duration-500">
-      {/* Sticky Header */}
-      <div
-        className={`fixed top-0 left-0 right-0 z-[70] px-4 py-3 flex justify-between items-center transition-all duration-300 ${
-          isScrolled
-            ? 'bg-white/80 backdrop-blur-md border-b border-stone-100 shadow-sm'
-            : 'bg-transparent'
-        }`}
-      >
+    <div
+      className={`fixed inset-0 z-50 flex flex-col bg-stone-50 transition-all duration-300 ease-out ${
+        visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+      }`}
+    >
+      {/* ── Top bar ── */}
+      <header className="flex items-center justify-between px-5 h-14 border-b border-stone-100 flex-shrink-0">
         <button
-          onClick={onClose}
-          className={`p-3 rounded-full transition-colors ${
-            isScrolled
-              ? 'hover:bg-stone-100 text-stone-800'
-              : 'bg-white/40 hover:bg-white/60 text-stone-900 backdrop-blur-sm'
-          }`}
+          onClick={handleClose}
+          className="flex items-center gap-1.5 text-stone-500 hover:text-stone-900 transition-colors"
         >
-          <ArrowLeft size={24} strokeWidth={1.5} />
+          <ArrowLeft size={18} strokeWidth={1.5} />
+          <span className="text-sm">Volver</span>
         </button>
-
-        <div
-          className={`flex gap-2 transition-opacity duration-300 ${isScrolled ? 'opacity-100' : 'opacity-0'}`}
-        >
-          <span className="font-serif text-lg text-stone-900 truncate max-w-[150px]">
-            {product.name}
-          </span>
-        </div>
 
         <button
           onClick={handleShare}
-          className={`p-3 rounded-full transition-colors ${
-            isScrolled
-              ? 'hover:bg-stone-100 text-stone-800'
-              : 'bg-white/40 hover:bg-white/60 text-stone-900 backdrop-blur-sm'
-          }`}
+          className="p-2 text-stone-400 hover:text-stone-700 transition-colors relative"
+          aria-label="Compartir"
         >
-          <Share2 size={22} strokeWidth={1.5} />
-        </button>
-      </div>
-
-      {/* Main Scrollable Content */}
-      <div
-        ref={scrollContainerRef}
-        onScroll={handleScroll}
-        className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar pb-32 bg-stone-50"
-      >
-        {/* Hero Image */}
-        <div className="relative h-[65vh] w-full bg-stone-200">
-          {product.images?.[0] ? (
-            <img
-              src={product.images[0]}
-              alt={product.name}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-stone-400">
-              <span className="font-serif text-xl italic text-center">
-                Colección <br /> Bazar Aura
-              </span>
-            </div>
+          <Share2 size={18} strokeWidth={1.5} />
+          {shared && (
+            <span className="absolute -bottom-6 right-0 text-[10px] text-stone-500 whitespace-nowrap">
+              ¡Copiado!
+            </span>
           )}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-stone-50/20" />
-        </div>
+        </button>
+      </header>
 
-        {/* Content Container */}
-        <div className="-mt-12 relative z-10">
-          <div className="bg-stone-50 pt-8 pb-4 rounded-t-[2.5rem] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
-            {/* Title & Price */}
-            <div className="mb-8 px-6">
-              <div className="flex justify-center mb-4">
-                <div className="w-12 h-1 bg-stone-200 rounded-full" />
-              </div>
-              <div className="flex flex-col gap-2">
-                <span className="text-stone-500 text-sm font-medium uppercase tracking-widest">
-                  {product.category}
-                </span>
-                <h1 className="font-serif text-4xl sm:text-5xl text-stone-900 leading-[1.1]">
-                  {product.name}
-                </h1>
-                <p className="text-3xl font-light text-stone-600 mt-2">
-                  {typeof product.price === 'number'
-                    ? `$${product.price.toLocaleString('es-MX')}`
-                    : 'Precio no disponible'}
-                </p>
-              </div>
-            </div>
+      {/* ── Scrollable body ── */}
+      <div className="flex-1 overflow-y-auto">
 
-            {/* Description */}
-            <div className="prose prose-stone prose-lg text-stone-600 font-light leading-relaxed mb-10 px-6">
-              <p>{product.description}</p>
-            </div>
+        {/* Image gallery */}
+        <div
+          className="relative bg-stone-100 w-full overflow-hidden select-none"
+          style={{ aspectRatio: '1 / 1' }}
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
+        >
+          {images.length > 0 ? (
+            <>
+              <img
+                key={activeImage}
+                src={images[activeImage]}
+                alt={`${product.name} — imagen ${activeImage + 1}`}
+                className="w-full h-full object-cover animate-fadeIn"
+              />
 
-            {/* Image Gallery */}
-            {product.images && product.images.length > 1 && (
-              <div className="space-y-4 mb-8 px-6">
-                <h3 className="font-serif text-2xl text-stone-900 px-2">
-                  Galería
-                </h3>
-                <div className="grid grid-cols-1 gap-4">
-                  {product.images.slice(1).map((img, idx) => (
-                    <div
-                      key={idx}
-                      className="rounded-2xl overflow-hidden aspect-[4/5] bg-stone-200"
-                    >
-                      <img
-                        src={img}
-                        alt={`${product.name} detalle ${idx + 1}`}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                    </div>
+              {/* Prev / Next arrows */}
+              {hasMultiple && (
+                <>
+                  <button
+                    onClick={prevImage}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/80 backdrop-blur-sm shadow-sm flex items-center justify-center text-stone-700 hover:bg-white transition-colors"
+                  >
+                    <ChevronLeft size={17} strokeWidth={1.5} />
+                  </button>
+                  <button
+                    onClick={nextImage}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/80 backdrop-blur-sm shadow-sm flex items-center justify-center text-stone-700 hover:bg-white transition-colors"
+                  >
+                    <ChevronRight size={17} strokeWidth={1.5} />
+                  </button>
+                </>
+              )}
+
+              {/* Dot indicators */}
+              {hasMultiple && (
+                <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5">
+                  {images.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setActiveImage(i)}
+                      className={`h-1.5 rounded-full transition-all duration-300 ${
+                        i === activeImage
+                          ? 'w-5 bg-stone-800'
+                          : 'w-1.5 bg-stone-400/50 hover:bg-stone-400'
+                      }`}
+                      aria-label={`Imagen ${i + 1}`}
+                    />
                   ))}
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Tags */}
-            {product.tags && product.tags.length > 0 && (
-              <div className="mx-6 pt-4 border-t border-stone-200 flex flex-wrap gap-2">
-                {product.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="text-xs text-stone-400 bg-stone-100 px-3 py-1.5 rounded-full"
-                  >
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            )}
+              {/* Image counter badge */}
+              {hasMultiple && (
+                <span className="absolute top-3 right-3 text-[11px] text-stone-600 bg-white/80 backdrop-blur-sm px-2 py-0.5 rounded-full">
+                  {activeImage + 1} / {images.length}
+                </span>
+              )}
+            </>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <span className="font-serif italic text-xl text-stone-400">Sin imagen</span>
+            </div>
+          )}
+        </div>
+
+        {/* Thumbnail strip */}
+        {images.length > 1 && (
+          <div className="flex gap-2 px-5 pt-3 pb-1 overflow-x-auto">
+            {images.map((img, i) => (
+              <button
+                key={i}
+                onClick={() => setActiveImage(i)}
+                className={`flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden border-2 transition-all duration-200 ${
+                  i === activeImage
+                    ? 'border-stone-800 opacity-100'
+                    : 'border-transparent opacity-40 hover:opacity-70'
+                }`}
+              >
+                <img src={img} alt="" className="w-full h-full object-cover" />
+              </button>
+            ))}
           </div>
+        )}
+
+        {/* ── Product info ── */}
+        <div className="px-5 pt-6 pb-36 space-y-6">
+
+          {/* Category + Name + Price */}
+          <div className="space-y-2">
+            {product.category && (
+              <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400 font-medium">
+                {product.category}
+              </p>
+            )}
+            <h1 className="font-serif text-[2rem] leading-[1.1] text-stone-900">
+              {product.name}
+            </h1>
+            <div className="flex items-baseline gap-1.5 pt-1">
+              <span className="text-2xl font-light text-stone-800">
+                ${product.price.toLocaleString('es-MX')}
+              </span>
+              <span className="text-xs text-stone-400 font-medium">MXN</span>
+            </div>
+          </div>
+
+          <hr className="border-stone-100" />
+
+          {/* Description */}
+          {product.description && (
+            <p className="text-stone-600 text-sm leading-relaxed">
+              {product.description}
+            </p>
+          )}
+
+          {/* Details table */}
+          {(product.material || product.dimensions || product.care) && (
+            <div className="space-y-3">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400 font-medium">
+                Detalles
+              </p>
+              <div className="divide-y divide-stone-100">
+                {product.material && (
+                  <div className="flex justify-between py-2.5">
+                    <span className="text-sm text-stone-400">Material</span>
+                    <span className="text-sm text-stone-800 text-right max-w-[60%]">
+                      {product.material}
+                    </span>
+                  </div>
+                )}
+                {product.dimensions && (
+                  <div className="flex justify-between py-2.5">
+                    <span className="text-sm text-stone-400">Medidas</span>
+                    <span className="text-sm text-stone-800 text-right max-w-[60%]">
+                      {product.dimensions}
+                    </span>
+                  </div>
+                )}
+                {product.care && (
+                  <div className="flex justify-between py-2.5">
+                    <span className="text-sm text-stone-400">Cuidados</span>
+                    <span className="text-sm text-stone-800 text-right max-w-[60%]">
+                      {product.care}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Tags */}
+          {product.tags?.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {product.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="px-3 py-1 text-[11px] text-stone-500 border border-stone-200 rounded-full tracking-wide"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Floating CTA Bottom Bar */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-md border-t border-stone-100 z-[80]">
-        <div className="max-w-md mx-auto flex items-center gap-4">
-          <div className="hidden sm:flex flex-col">
-            <span className="text-xs text-stone-500 uppercase tracking-wider">
-              Total
-            </span>
-            <span className="font-serif text-xl text-stone-900">
-              {typeof product.price === 'number'
-                ? `$${product.price.toLocaleString('es-MX')}`
-                : '-'}
-            </span>
-          </div>
-          <button
-            onClick={handleWhatsApp}
-            className="flex-1 bg-stone-900 text-stone-50 rounded-full py-4 px-6 font-medium text-lg hover:bg-stone-800 transition-all active:scale-[0.98] flex items-center justify-center gap-3 shadow-xl shadow-stone-900/10"
-          >
-            <MessageCircle size={20} className="fill-stone-50/20" />
-            <span>Lo quiero</span>
-          </button>
-        </div>
+      {/* ── Sticky CTA ── */}
+      <div className="fixed bottom-0 left-0 right-0 px-5 py-4 bg-stone-50/95 backdrop-blur-md border-t border-stone-100">
+        <button
+          onClick={handleWhatsApp}
+          className="w-full flex items-center justify-center gap-2.5 bg-stone-900 text-white py-4 rounded-2xl font-medium text-[15px] hover:bg-stone-800 active:scale-[0.98] transition-all duration-150 shadow-sm"
+        >
+          <MessageCircle size={19} strokeWidth={1.5} />
+          Preguntar por WhatsApp
+        </button>
       </div>
     </div>
   );
