@@ -41,6 +41,10 @@ export default function SettingsPage() {
   const [whatsappPhone, setWhatsappPhone] = useState("");
   const [primaryColor, setPrimaryColor] = useState("#000000");
   const [address, setAddress] = useState("");
+  const [mapsUrl, setMapsUrl] = useState("");
+  const [instagram, setInstagram] = useState("");
+  const [facebook, setFacebook] = useState("");
+  const [tiktok, setTiktok] = useState("");
   const [logo, setLogo] = useState<File | null>(null);
   const [previewLogo, setPreviewLogo] = useState<string | null>(null);
 
@@ -51,6 +55,10 @@ export default function SettingsPage() {
       setWhatsappPhone(currentTenant.whatsappPhone);
       setPrimaryColor(currentTenant.primaryColor || "#000000");
       setAddress(currentTenant.address || "");
+      setMapsUrl(currentTenant.mapsUrl || "");
+      setInstagram(currentTenant.socialLinks?.instagram || "");
+      setFacebook(currentTenant.socialLinks?.facebook || "");
+      setTiktok(currentTenant.socialLinks?.tiktok || "");
       setPreviewLogo(currentTenant.logo || null);
     }
   }, [currentTenant]);
@@ -155,6 +163,12 @@ export default function SettingsPage() {
         whatsappPhone,
         primaryColor,
         address,
+        mapsUrl: mapsUrl || null,
+        socialLinks: {
+          instagram: instagram || null,
+          facebook: facebook || null,
+          tiktok: tiktok || null,
+        },
         logo: logoUrl || null,
       });
 
@@ -400,6 +414,105 @@ export default function SettingsPage() {
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md p-2 border"
+                />
+              </div>
+            </div>
+
+            <div className="sm:col-span-6">
+              <label
+                htmlFor="mapsUrl"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Link de Google Maps (Opcional)
+              </label>
+              <div className="mt-1">
+                <input
+                  type="url"
+                  id="mapsUrl"
+                  name="mapsUrl"
+                  value={mapsUrl}
+                  onChange={(e) => setMapsUrl(e.target.value)}
+                  placeholder="https://maps.app.goo.gl/..."
+                  className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md p-2 border"
+                />
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Pega el link de tu ubicación en Google Maps. Si se configura, se usará en lugar de buscar la dirección de texto.
+              </p>
+            </div>
+          </div>
+
+          {/* Redes Sociales */}
+          <div className="pt-8 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6 border-t border-gray-200">
+            <h3 className="text-lg leading-6 font-medium text-gray-900 sm:col-span-6">
+              Redes Sociales
+            </h3>
+
+            <div className="sm:col-span-4">
+              <label
+                htmlFor="instagram"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Instagram
+              </label>
+              <div className="mt-1 flex rounded-md shadow-sm">
+                <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm">
+                  instagram.com/
+                </span>
+                <input
+                  type="text"
+                  id="instagram"
+                  name="instagram"
+                  value={instagram}
+                  onChange={(e) => setInstagram(e.target.value.replace(/^@/, ""))}
+                  placeholder="mi_tienda"
+                  className="flex-1 focus:ring-blue-500 focus:border-blue-500 block w-full min-w-0 rounded-none rounded-r-md sm:text-sm border-gray-300 p-2 border"
+                />
+              </div>
+            </div>
+
+            <div className="sm:col-span-4">
+              <label
+                htmlFor="facebook"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Facebook
+              </label>
+              <div className="mt-1 flex rounded-md shadow-sm">
+                <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm">
+                  facebook.com/
+                </span>
+                <input
+                  type="text"
+                  id="facebook"
+                  name="facebook"
+                  value={facebook}
+                  onChange={(e) => setFacebook(e.target.value)}
+                  placeholder="mi.tienda"
+                  className="flex-1 focus:ring-blue-500 focus:border-blue-500 block w-full min-w-0 rounded-none rounded-r-md sm:text-sm border-gray-300 p-2 border"
+                />
+              </div>
+            </div>
+
+            <div className="sm:col-span-4">
+              <label
+                htmlFor="tiktok"
+                className="block text-sm font-medium text-gray-700"
+              >
+                TikTok
+              </label>
+              <div className="mt-1 flex rounded-md shadow-sm">
+                <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm">
+                  tiktok.com/@
+                </span>
+                <input
+                  type="text"
+                  id="tiktok"
+                  name="tiktok"
+                  value={tiktok}
+                  onChange={(e) => setTiktok(e.target.value.replace(/^@/, ""))}
+                  placeholder="mi_tienda"
+                  className="flex-1 focus:ring-blue-500 focus:border-blue-500 block w-full min-w-0 rounded-none rounded-r-md sm:text-sm border-gray-300 p-2 border"
                 />
               </div>
             </div>

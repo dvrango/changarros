@@ -6,6 +6,12 @@ export interface UserProfile {
     createdAt: number;
 }
 
+export interface SocialLinks {
+    instagram?: string;
+    facebook?: string;
+    tiktok?: string;
+}
+
 export interface Tenant {
     id: string; // slug
     name: string;
@@ -14,6 +20,8 @@ export interface Tenant {
     logo?: string; // Storage URL
     primaryColor?: string; // e.g., "#000000"
     address?: string;
+    mapsUrl?: string; // Google Maps link
+    socialLinks?: SocialLinks;
     ownerId: string;
     createdAt: number;
 }

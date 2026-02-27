@@ -1,3 +1,9 @@
+export interface SocialLinks {
+  instagram?: string;
+  facebook?: string;
+  tiktok?: string;
+}
+
 export interface Tenant {
   id: string; // slug
   name: string;
@@ -6,6 +12,8 @@ export interface Tenant {
   logo?: string;
   primaryColor?: string;
   address?: string;
+  mapsUrl?: string; // Google Maps link
+  socialLinks?: SocialLinks;
   ownerId: string;
   createdAt: number;
 }
